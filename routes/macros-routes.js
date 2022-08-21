@@ -177,6 +177,9 @@ router.get('/macroslog/:uid', (req, res, next)=>{
         }
         return macroHistory
     })
+    if(macroHistory.length === 0){
+        return res.status(404).json({error:'No macros found for that user or user does not exist'})
+    }
     res.json({macroHistory});
 });
 
