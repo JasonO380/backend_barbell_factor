@@ -133,4 +133,16 @@ router.get('/:wid', (req, res, next)=>{
     res.json({workout: workout});
 });
 
+router.get('/workoutlog/:uid', (req, res, next)=>{
+    const userID = req.params.uid;
+    let workoutHistory = [];
+    const workouts = session.map(w =>{
+        if(w.athlete === userID){
+            workoutHistory.push(w)
+        }
+        return workoutHistory
+    })
+    res.json({workoutHistory});
+});
+
 module.exports = router;

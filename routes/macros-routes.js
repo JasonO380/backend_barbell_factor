@@ -160,12 +160,24 @@ const macroData = [
 ]
 
 
-router.get('/:wid', (req, res, next)=>{
-    const macroID = req.params.wid;
+router.get('/:mid', (req, res, next)=>{
+    const macroID = req.params.mid;
     const macros = macroData.find(m =>{
         return m.id === macroID
     })
     res.json({macros: macros});
+});
+
+router.get('/macroslog/:uid', (req, res, next)=>{
+    const userID = req.params.uid;
+    let macroHistory = [];
+    const macros = macroData.map(m =>{
+        if(m.athlete === userID){
+            macroHistory.push(m)
+        }
+        return macroHistory
+    })
+    res.json({macroHistory});
 });
 
 module.exports = router;
