@@ -165,6 +165,11 @@ router.get('/:mid', (req, res, next)=>{
     const macros = macroData.find(m =>{
         return m.id === macroID
     })
+    if(!macros){
+        const error = new Error ('No macro data found');
+        error.code = 404;
+        next(error);
+    }
     res.json({macros: macros});
 });
 
@@ -175,10 +180,11 @@ router.get('/macroslog/:uid', (req, res, next)=>{
         if(m.athlete === userID){
             macroHistory.push(m)
         }
-        return macroHistory
     })
     if(macroHistory.length === 0){
-        return res.status(404).json({error:'No macros found for that user or user does not exist'})
+        const error = new Error('The user ID does not exist or there is no macro data entered');
+        error.code = 404;
+        throw error;
     }
     res.json({macroHistory});
 });

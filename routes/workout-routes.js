@@ -131,7 +131,9 @@ router.get('/:wid', (req, res, next)=>{
         return w.id === workoutID
     })
     if (!workout){
-        return res.status(404).json({error:'No workouts found'})
+        const error = new Error ('No workout data found');
+        error.code = 404;
+        next(error);
     }
     res.json({workout: workout});
 });
@@ -145,7 +147,9 @@ router.get('/workoutlog/:uid', (req, res, next)=>{
         }
     })
     if(workoutHistory.length === 0){
-        return res.status(404).json({error:'No workouts found for that user or user does not exist'})
+        const error = new Error('The user ID does not exist or there is no workout data entered');
+        error.code = 404;
+        throw error;
     }
     res.json({workoutHistory});
 });
