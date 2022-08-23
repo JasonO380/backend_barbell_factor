@@ -7,4 +7,6 @@ router.get('/:mid', macrosControllers.getMacrosById);
 
 router.get('/macroslog/:uid', macrosControllers.getMacrosByUserId);
 
+router.post('/', macrosControllers.addMacros);
+
 module.exports = router;

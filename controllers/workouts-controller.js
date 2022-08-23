@@ -1,4 +1,7 @@
 const HttpError = require('../models/http-error');
+const { uuid } = require('uuidv4');
+
+const macroDateEntry = new Date();
 
 const session = [
     {
@@ -148,5 +151,24 @@ const getWorkoutsByUserID = (req, res, next)=>{
     res.json({workoutHistory});
 }
 
+const addWorkouts = (req, res, next) =>{
+    const { movement, athlete, reps, rounds, weight, id, dayOfWeek, month, day, year } = req.body;
+    const sessionInfo = {
+        movement,
+        athlete,
+        reps,
+        rounds,
+        weight,
+        id:uuid(),
+        dayOfWeek: macroDateEntry.toLocaleString("default", { weekday: "long" }),
+        month: macroDateEntry.toLocaleString("en-US", { month:"long" }),
+        day:macroDateEntry.getDate(),
+        year: macroDateEntry.getFullYear()
+    };
+    session.push(sessionInfo);
+    res.status(201).json({session: sessionInfo})
+}
+
 exports.getWorkoutsById = getWorkoutsById;
 exports.getWorkoutsByUserID = getWorkoutsByUserID;
+exports.addWorkouts = addWorkouts;

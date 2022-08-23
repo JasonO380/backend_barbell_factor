@@ -1,4 +1,7 @@
 const HttpError = require('../models/http-error');
+const { uuid } = require('uuidv4');
+
+const macroDateEntry = new Date();
 
 const macroData = [
     {
@@ -182,5 +185,23 @@ const getMacrosByUserId = (req, res, next)=>{
     res.json({macroHistory});
 };
 
+const addMacros = (req, res, next) => {
+    const { carbs, protein, fats, athlete, id, dayOfWeek, month, day, year } = req.body;
+    const macroInfo = {
+        protein,
+        carbs,
+        fats,
+        athlete,
+        id:uuid(),
+        dayOfWeek: macroDateEntry.toLocaleString("default", { weekday: "long" }),
+        month: macroDateEntry.toLocaleString("en-US", { month:"long" }),
+        day:macroDateEntry.getDate(),
+        year: macroDateEntry.getFullYear()
+    };
+    macroData.push(macroInfo);
+    res.status(201).json({macros: macroInfo})
+}
+
 exports.getMacrosById = getMacrosById;
 exports.getMacrosByUserId = getMacrosByUserId;
+exports.addMacros = addMacros;

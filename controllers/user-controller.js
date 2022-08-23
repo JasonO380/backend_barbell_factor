@@ -1,4 +1,7 @@
 const HttpError = require('../models/http-error');
+const { uuid } = require('uuidv4');
+
+const macroDateEntry = new Date();
 
 const users = [
     {
@@ -26,4 +29,21 @@ const getUserbyID = (req, res, next)=>{
     res.json({user: user});
 }
 
+const addUser = (req, res, next)=>{
+    const { username, password, email } = req.body;
+    const userInfo = {
+        username,
+        email,
+        password,
+        id: uuid(),
+        dayOfWeek: macroDateEntry.toLocaleString("default", { weekday: "long" }),
+        month: macroDateEntry.toLocaleString("en-US", { month:"long" }),
+        day:macroDateEntry.getDate(),
+        year: macroDateEntry.getFullYear()
+    };
+    users.push(userInfo);
+    res.status(201).json({newUser: userInfo})
+}
+
 exports.getUserbyID = getUserbyID;
+exports.addUser = addUser;
