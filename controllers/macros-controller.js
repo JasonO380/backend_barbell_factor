@@ -1,9 +1,10 @@
 const HttpError = require('../models/http-error');
 const { uuid } = require('uuidv4');
+const { validationResult } = require('express-validator');
 
 const macroDateEntry = new Date();
 
-const macroData = [
+let macroData = [
     {
         id:"mac1",
         athlete:"user1",
@@ -173,19 +174,22 @@ const getMacrosById = (req, res, next)=>{
 
 const getMacrosByUserId = (req, res, next)=>{
     const userID = req.params.uid;
-    let macroHistory = [];
-    const macros = macroData.map(m =>{
-        if(m.athlete === userID){
-            macroHistory.push(m)
-        }
-    })
-    if(macroHistory.length === 0){
+    // filter returns an array of data that matches the athlete and userID keys
+    const macros = macroData.filter(m => m.athlete === userID);
+    if(macros.length === 0){
         throw new HttpError('The user ID does not exist or there is no macro data entered', 404);
     }
-    res.json({macroHistory});
+    res.json({macros});
 };
 
 const addMacros = (req, res, next) => {
+    //add validation from express-validator 
+    const errors = validationResult(req);
+    //check to see is errors is not empty if there are errors throw new HttpError
+    if(!errors.isEmpty()){
+        console.log(errors);
+        throw new HttpError('Please enter a valid macro count. Fields must not be empty', 422)
+    };
     const { carbs, protein, fats, athlete, id, dayOfWeek, month, day, year } = req.body;
     const macroInfo = {
         protein,
@@ -202,6 +206,41 @@ const addMacros = (req, res, next) => {
     res.status(201).json({macros: macroInfo})
 }
 
+const updateMacrosByID = (req, res, next)=>{
+    const { carbs, protein, fats } = req.body;
+    //add validation from express-validator 
+    const errors = validationResult(req);
+    //check to see is errors is not empty if there are errors throw new HttpError
+    if(!errors.isEmpty()){
+        console.log(errors);
+        throw new HttpError('Please enter a valid macro count. Fields must not be empty', 422)
+    };
+    const macroID = req.params.mid;
+    //spread operator to make a copy of the old key value pairs
+    const updatedMacros = {...macroData.find(m => m.id === macroID)};
+    //find the index of the macros
+    const macroIndex = macroData.findIndex(m => m.id === macroID);
+    //update the fields with the request body values
+    updatedMacros.carbs = carbs;
+    updatedMacros.protein = protein;
+    updatedMacros.fats = fats;
+    //put the updated macros back in its indexed spot
+    macroData[macroIndex] = updatedMacros;
+    res.status(200).json({macros:updatedMacros});
+};
+
+const deleteMacrosbyID = (req, res, next)=>{
+    const macroID = req.params.mid;
+    if(!macroData.find(m => m.id === macroID)){
+        throw new HttpError('Macros with that id do not exist', 404)
+    }
+    // use filter to find all places and return the ones that DO NOT MATCH THE ID !==
+    macroData = macroData.filter(m=> m.id !== macroID);
+    res.status(200).json({message:'Successfully deleted macros'})
+}
+
 exports.getMacrosById = getMacrosById;
 exports.getMacrosByUserId = getMacrosByUserId;
 exports.addMacros = addMacros;
+exports.updateMacrosByID = updateMacrosByID;
+exports.deleteMacrosbyID = deleteMacrosbyID;

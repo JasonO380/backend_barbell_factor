@@ -1,9 +1,10 @@
 const HttpError = require('../models/http-error');
 const { uuid } = require('uuidv4');
+const { validationResult } = require('express-validator');
 
 const macroDateEntry = new Date();
 
-const session = [
+let session = [
     {
         id:"w1",
         month:"July",
@@ -139,20 +140,22 @@ const getWorkoutsById = (req, res, next)=>{
 
 const getWorkoutsByUserID = (req, res, next)=>{
     const userID = req.params.uid;
-    let workoutHistory = [];
-    const workouts = session.map(w =>{
-        if(w.athlete === userID){
-            workoutHistory.push(w)
-        }
-    })
-    if(workoutHistory.length === 0){
+    const workouts = session.filter(w => w.athlete === userID);    
+    if(workouts.length === 0){
         throw new HttpError('The user ID does not exist or there is no workout data entered', 404);
     }
-    res.json({workoutHistory});
+    res.json({workouts});
 }
 
 const addWorkouts = (req, res, next) =>{
     const { movement, athlete, reps, rounds, weight, id, dayOfWeek, month, day, year } = req.body;
+    //add validation from express-validator 
+    const errors = validationResult(req);
+    //check to see is errors is not empty if there are errors throw new HttpError
+    if(!errors.isEmpty()){
+        console.log(errors);
+        throw new HttpError('Movement must be at least 3 characters and all fields must not be empty', 422)
+    };
     const sessionInfo = {
         movement,
         athlete,
@@ -169,6 +172,41 @@ const addWorkouts = (req, res, next) =>{
     res.status(201).json({session: sessionInfo})
 }
 
+const updateWorkout = (req, res, next)=>{
+    const { movement, reps, rounds, weight } = req.body;
+    //add validation from express-validator 
+    const errors = validationResult(req);
+    //check to see is errors is not empty if there are errors throw new HttpError
+    if(!errors.isEmpty()){
+        console.log(errors);
+        throw new HttpError('Movement must be at least 3 chearacters and all fields must not be empty', 422)
+    };
+    const workoutID = req.params.wid;
+    //spread operator to make a copy of the old values
+    const updatedWorkout = {...session.find(w=> w.id === workoutID)};
+    //find the index of the workout thats being updated
+    const workoutIndex = session.findIndex(w=> w.id === workoutID);
+    //update the fields with new values
+    updatedWorkout.movement = movement;
+    updatedWorkout.reps = reps;
+    updatedWorkout.rounds = rounds;
+    updatedWorkout.weight = weight;
+    //put the updated workouts back into the original workout indexes place
+    session[workoutIndex] = updatedWorkout;
+    res.status(200).json({message: 'Successfully updated workout info'})
+}
+
+const deleteWorkout = (req, res, next)=>{
+    const workoutID = req.params.wid;
+    if(!session.find(w => w.id === workoutID)){
+        throw new HttpError('Workout with that id does not exist', 404)
+    }
+    session = session.filter(w => w.id !== workoutID);
+    res.status(200).json({message:'Successfully deleted the workout session'});
+}
+
 exports.getWorkoutsById = getWorkoutsById;
 exports.getWorkoutsByUserID = getWorkoutsByUserID;
 exports.addWorkouts = addWorkouts;
+exports.updateWorkout = updateWorkout;
+exports.deleteWorkout = deleteWorkout;
