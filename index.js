@@ -2,12 +2,14 @@ const express = require('express');
 const bodyparser = require('body-parser');
 const HttpError = require('./models/http-error');
 const mongoose = require('mongoose');
+require('dotenv').config();
 
 const workoutRoutes = require('./routes/workout-routes');
 const macroRoutes = require('./routes/macros-routes');
 const userRoutes = require('./routes/user-routes');
 
 const app = express();
+let URL = process.env.URL
 
 app.use(bodyparser.json());
 
@@ -31,7 +33,7 @@ app.use((error, req, res, next)=> {
 })
 
 mongoose
-    .connect('mongodb+srv://JMOllada:Myapprules2242@cluster0.v0xbrgq.mongodb.net/?retryWrites=true&w=majority')
+    .connect(URL)
     .then(()=> {
         app.listen(5000);
     })
