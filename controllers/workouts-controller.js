@@ -1,8 +1,10 @@
 const HttpError = require('../models/http-error');
 const { uuid } = require('uuidv4');
 const { validationResult } = require('express-validator');
+// constructor in singular name "Workout" from workouts.js
+const Workout = require('../models/workouts');
 
-const macroDateEntry = new Date();
+const dateEntry = new Date();
 
 let session = [
     {
@@ -127,28 +129,36 @@ let session = [
     },
 ]
 
-const getWorkoutsById = (req, res, next)=>{
+const getWorkoutsById = async (req, res, next)=>{
     const workoutID = req.params.wid;
-    const workout = session.find(w =>{
-        return w.id === workoutID
-    })
-    if (!workout){
-        throw new HttpError ('No workout data found', 404);
+    let workout;
+    try {
+        workout = await Workout.findById(workoutID);
+    } catch (err){
+        const error = new HttpError('Something went wrong attempting to find that workout', 500);
+        return next(error);
+    };
+    if(!workout){
+        const error =  new HttpError('A workout with that ID does not exist', 404);
+        return next(error);
     }
-    res.json({workout: workout});
+    res.json({workout: workout.toObject( {getters: true}) });
 }
 
-const getWorkoutsByUserID = (req, res, next)=>{
-    const userID = req.params.uid;
-    const workouts = session.filter(w => w.athlete === userID);    
-    if(workouts.length === 0){
-        throw new HttpError('The user ID does not exist or there is no workout data entered', 404);
+const getWorkoutsByUserName = async (req, res, next)=>{
+    const userName = req.params.username;
+    let userWorkoutInfo;
+    try {
+        userWorkoutInfo = await Workout.find({ athlete:userName });
+    } catch (err){
+        const error = new HttpError('Something went wrong with the user workout info logic', 500);
+        return next(error);
     }
-    res.json({workouts});
+    res.json({workout: userWorkoutInfo.map(workouts => workouts.toObject({getters: true})) });
 }
 
-const addWorkouts = (req, res, next) =>{
-    const { movement, athlete, reps, rounds, weight, id, dayOfWeek, month, day, year } = req.body;
+const addWorkouts = async (req, res, next) =>{
+    const { movement, athlete, reps, rounds, weight, dayOfWeek, month, day, year } = req.body;
     //add validation from express-validator 
     const errors = validationResult(req);
     //check to see is errors is not empty if there are errors throw new HttpError
@@ -156,23 +166,27 @@ const addWorkouts = (req, res, next) =>{
         console.log(errors);
         throw new HttpError('Movement must be at least 3 characters and all fields must not be empty', 422)
     };
-    const sessionInfo = {
+    const sessionInfo = new Workout ({
         movement,
-        athlete,
-        reps,
         rounds,
+        reps,
         weight,
-        id:uuid(),
-        dayOfWeek: macroDateEntry.toLocaleString("default", { weekday: "long" }),
-        month: macroDateEntry.toLocaleString("en-US", { month:"long" }),
-        day:macroDateEntry.getDate(),
-        year: macroDateEntry.getFullYear()
-    };
-    session.push(sessionInfo);
+        athlete,
+        dayOfWeek: dateEntry.toLocaleString("default", { weekday: "long" }),
+        month: dateEntry.toLocaleString("en-US", { month:"long" }),
+        day:dateEntry.getDate(),
+        year: dateEntry.getFullYear()
+    })
+    try {
+        await sessionInfo.save();
+    } catch (err) {
+        const error = new HttpError('Something went wrong adding workout info', 500);
+        return next (error)
+    }
     res.status(201).json({session: sessionInfo})
 }
 
-const updateWorkout = (req, res, next)=>{
+const updateWorkout = async (req, res, next)=>{
     const { movement, reps, rounds, weight } = req.body;
     //add validation from express-validator 
     const errors = validationResult(req);
@@ -182,31 +196,47 @@ const updateWorkout = (req, res, next)=>{
         throw new HttpError('Movement must be at least 3 chearacters and all fields must not be empty', 422)
     };
     const workoutID = req.params.wid;
-    //spread operator to make a copy of the old values
-    const updatedWorkout = {...session.find(w=> w.id === workoutID)};
-    //find the index of the workout thats being updated
-    const workoutIndex = session.findIndex(w=> w.id === workoutID);
-    //update the fields with new values
-    updatedWorkout.movement = movement;
-    updatedWorkout.reps = reps;
-    updatedWorkout.rounds = rounds;
-    updatedWorkout.weight = weight;
-    //put the updated workouts back into the original workout indexes place
-    session[workoutIndex] = updatedWorkout;
-    res.status(200).json({message: 'Successfully updated workout info'})
+    let workoutToUpdate;
+    try {
+        workoutToUpdate= await Workout.findById(workoutID);
+    } catch (err){
+        const error = new HttpError('Something went wrong in the update workout logic', 500);
+        return next(error);
+    }
+    workoutToUpdate.movement = movement;
+    workoutToUpdate.rounds = rounds;
+    workoutToUpdate.reps = reps;
+    workoutToUpdate.weight = weight;
+    try {
+        await workoutToUpdate.save();
+    } catch (err){
+        const error = new HttpError('Updating workout failed', 422);
+        return next(error)
+    }
+    res.status(200).json({workout: workoutToUpdate.toObject({getters: true}) });
 }
 
-const deleteWorkout = (req, res, next)=>{
+const deleteWorkout = async (req, res, next)=>{
     const workoutID = req.params.wid;
-    if(!session.find(w => w.id === workoutID)){
-        throw new HttpError('Workout with that id does not exist', 404)
+    let workoutToDelete;
+    try {
+        workoutToDelete = await Workout.findById(workoutID)
+    } catch (err){
+        const error = new HttpError('Something went wrong in the delete workout logic', 500);
+        return next(error)
     }
-    session = session.filter(w => w.id !== workoutID);
+    try {
+        workoutToDelete.remove();
+    } catch (err){
+        const error = new HttpError('Could not delete the workout', 500);
+        return next(error);
+    }
+    
     res.status(200).json({message:'Successfully deleted the workout session'});
 }
 
 exports.getWorkoutsById = getWorkoutsById;
-exports.getWorkoutsByUserID = getWorkoutsByUserID;
+exports.getWorkoutsByUserName = getWorkoutsByUserName;
 exports.addWorkouts = addWorkouts;
 exports.updateWorkout = updateWorkout;
 exports.deleteWorkout = deleteWorkout;

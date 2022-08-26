@@ -1,64 +1,96 @@
 const HttpError = require('../models/http-error');
 const { uuid } = require('uuidv4');
 const { validationResult } = require('express-validator');
-
+const User = require('../models/users');
 const dateEntry = new Date();
 
-const users = [
-    {
-        id:'1',
-        athlete:'user1',
-        email:'test@test.com',
-        password:'pass1'
-    },
-    {
-        id:'2',
-        athlete:'user2',
-        email:'test2@test.com',
-        password:'pass2'
-    }
-]
+// const users = [
+//     {
+//         id:'1',
+//         athlete:'user1',
+//         email:'test@test.com',
+//         password:'pass1'
+//     },
+//     {
+//         id:'2',
+//         athlete:'user2',
+//         email:'test2@test.com',
+//         password:'pass2'
+//     }
+// ]
 
-const getUsers = (req, res, next)=>{
-    res.json({users: users});
+const getUsers = async (req, res, next)=>{
+    let users;
+    try {
+        users = await User.find({}, '-password')
+    } catch (err){
+        const error = new HttpError('Error in retrieving users', 500);
+        return next (error);
+    }
+    res.json({users: users.map(user => user.toObject({ getters: true })) });
 }
 
-const signup = (req, res, next)=>{
+const signup = async (req, res, next)=>{
     const { username, password, email } = req.body;
     const errors = validationResult(req);
-    //check to see is errors is not empty if there are errors throw new HttpError
+    //check to see if errors is not empty if there are errors throw new HttpError
     if(!errors.isEmpty()){
         console.log(errors);
         throw new HttpError('Password must be at least 6 characters, email must contain @, username must not be empty', 422)
     };
     //make sure mutliple email addresses can not be used
-    const emailExists = users.find(u => u.email === email);
-    if (emailExists){
-        throw new HttpError('Email address already in use', 422);
+    let emailExists;
+    let userNameExists;
+    try {
+        emailExists = await User.findOne({email: email});
+    } catch (err){
+        const error = new HttpError('Error on email exists logic', 500);
+        return next(error);
     }
-    const createdUser = {
+    if (emailExists){
+        const error = new HttpError('Email already exists', 422);
+        return next (error);
+    }
+    try {
+        userNameExists = await User.findOne({username: username});
+    } catch (err){
+        const error = new HttpError('Error on username exists logic', 500);
+        return next(error);
+    }
+    if (userNameExists){
+        const error = new HttpError('Username has been taken', 422);
+        return next(error);
+    }
+
+    const createdUser = new User ({
         username,
         email,
-        password,
-        id: uuid(),
-        dayOfWeek: dateEntry.toLocaleString("default", { weekday: "long" }),
-        month: dateEntry.toLocaleString("en-US", { month:"long" }),
-        day:dateEntry.getDate(),
-        year: dateEntry.getFullYear()
-    };
-    users.push(createdUser);
-    res.status(201).json({newUser: createdUser})
+        password
+    });
+    try {
+        await createdUser.save()
+    } catch (err){
+        const error = new HttpError('Something went wrong creating the user', 500);
+        return next(error);
+    }
+    res.status(201).json({ newUser: createdUser.toObject({ getters: true }) });
 };
 
-const login = (req, res, next)=>{
+const login = async (req, res, next)=>{
     const { email, password } = req.body;
-    //check to see is errors is not empty if there are errors throw new HttpError
-    const verifiedUser = users.find(users => users.email === email);
-    //check to see if there is not a verified user and or if password entered is not equal to password stored
-    if(!verifiedUser || verifiedUser.password !== password){
-        throw new HttpError('Incorrect email and or password', 401)
+    let verifiedUser;
+    try {
+        verifiedUser = await User.findOne({ email:email })
+    } catch(err){
+        const error = new HttpError('email not found', 500);
+        return next (error);
     }
-    res.json({message:'Successfully logged in'})
+
+    if(!verifiedUser || verifiedUser.password !== password){
+        const error = new HttpError('Email and password do not match', 401);
+        return next(error);
+    }
+    res.json({message:'Succesfully logged in!!', user: verifiedUser.toObject({ getters: true }) });
 };
 
 exports.getUsers = getUsers;

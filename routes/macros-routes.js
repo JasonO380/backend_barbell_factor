@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.get('/:mid', macrosControllers.getMacrosById);
 
-router.get('/macroslog/:uid', macrosControllers.getMacrosByUserId);
+router.get('/macroslog/:username', macrosControllers.getMacrosByUserName);
 //with express-validators enter array of checks for fields to be validated
 router.post('/', 
 [

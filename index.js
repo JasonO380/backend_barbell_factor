@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyparser = require('body-parser');
 const HttpError = require('./models/http-error');
+const mongoose = require('mongoose');
 
 const workoutRoutes = require('./routes/workout-routes');
 const macroRoutes = require('./routes/macros-routes');
@@ -29,4 +30,12 @@ app.use((error, req, res, next)=> {
     res.json({message: error.message || 'An unknown error occurred'})
 })
 
-app.listen(5000);
+mongoose
+    .connect('mongodb+srv://JMOllada:Myapprules2242@cluster0.v0xbrgq.mongodb.net/?retryWrites=true&w=majority')
+    .then(()=> {
+        app.listen(5000);
+    })
+    .catch(err =>{
+        console.log(err);
+    })
+

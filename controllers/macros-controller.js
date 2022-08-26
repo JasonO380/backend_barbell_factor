@@ -1,8 +1,10 @@
 const HttpError = require('../models/http-error');
 const { uuid } = require('uuidv4');
 const { validationResult } = require('express-validator');
+//constructor is singular name used in user.js schema set up
+const Macro = require('../models/macros')
 
-const macroDateEntry = new Date();
+const dateEntry = new Date();
 
 let macroData = [
     {
@@ -161,28 +163,40 @@ let macroData = [
     },
 ]
 
-const getMacrosById = (req, res, next)=>{
+const getMacrosById = async (req, res, next)=>{
     const macroID = req.params.mid;
-    const macros = macroData.find(m =>{
-        return m.id === macroID
-    })
+    let macros;
+    try {
+        macros = await Macro.findById(macroID);
+    } catch (err){
+        const error = new HttpError('Something went wrong attempting to find macros by ID', 500);
+        return next(error);
+    };
     if(!macros){
-        throw new HttpError ('No macro data found', 404);
+        const error = new HttpError('No macros exist with that ID', 404);
+        return next (error)
     }
-    res.json({macros: macros});
+    res.json({macros: macros.toObject( {getters: true}) });
 };
 
-const getMacrosByUserId = (req, res, next)=>{
-    const userID = req.params.uid;
-    // filter returns an array of data that matches the athlete and userID keys
-    const macros = macroData.filter(m => m.athlete === userID);
-    if(macros.length === 0){
-        throw new HttpError('The user ID does not exist or there is no macro data entered', 404);
+const getMacrosByUserName = async (req, res, next)=>{
+    const userName = req.params.username;
+    let userMacroInfo;
+    try {
+        //match the Macro field key athlete with the parameter as the value to connect the schemas
+        userMacroInfo = await Macro.find({athlete: userName})
+    } catch (err){
+        const error = new HttpError('Something went wrong with finding macros by username logic', 500);
+        return next (error);
     }
-    res.json({macros});
+    if(!userMacroInfo || userMacroInfo.length === 0){
+        const error = new HttpError('Could not find any macro data for that athlete');
+        return next(error);
+    }
+    res.json({macros: userMacroInfo.map(m => m.toObject({getters: true}) )});
 };
 
-const addMacros = (req, res, next) => {
+const addMacros = async (req, res, next) => {
     //add validation from express-validator 
     const errors = validationResult(req);
     //check to see is errors is not empty if there are errors throw new HttpError
@@ -190,23 +204,30 @@ const addMacros = (req, res, next) => {
         console.log(errors);
         throw new HttpError('Please enter a valid macro count. Fields must not be empty', 422)
     };
-    const { carbs, protein, fats, athlete, id, dayOfWeek, month, day, year } = req.body;
-    const macroInfo = {
-        protein,
+    const { carbs, protein, fats, athlete, dayOfWeek, month, day, year } = req.body;
+
+    const macroInfo = new Macro({
         carbs,
+        protein,
         fats,
+        dayOfWeek: dateEntry.toLocaleString("default", { weekday: "long" }),
+        month: dateEntry.toLocaleString("en-US", { month:"long" }),
+        day:dateEntry.getDate(),
+        year: dateEntry.getFullYear(),
         athlete,
-        id:uuid(),
-        dayOfWeek: macroDateEntry.toLocaleString("default", { weekday: "long" }),
-        month: macroDateEntry.toLocaleString("en-US", { month:"long" }),
-        day:macroDateEntry.getDate(),
-        year: macroDateEntry.getFullYear()
-    };
-    macroData.push(macroInfo);
+    });
+
+    try {
+        await macroInfo.save();
+    } catch (err) {
+        const error = new HttpError('Something went wrong adding macros', 500);
+        return next(error);
+    }
+    
     res.status(201).json({macros: macroInfo})
 }
 
-const updateMacrosByID = (req, res, next)=>{
+const updateMacrosByID = async (req, res, next)=>{
     const { carbs, protein, fats } = req.body;
     //add validation from express-validator 
     const errors = validationResult(req);
@@ -216,31 +237,45 @@ const updateMacrosByID = (req, res, next)=>{
         throw new HttpError('Please enter a valid macro count. Fields must not be empty', 422)
     };
     const macroID = req.params.mid;
-    //spread operator to make a copy of the old key value pairs
-    const updatedMacros = {...macroData.find(m => m.id === macroID)};
-    //find the index of the macros
-    const macroIndex = macroData.findIndex(m => m.id === macroID);
-    //update the fields with the request body values
-    updatedMacros.carbs = carbs;
-    updatedMacros.protein = protein;
-    updatedMacros.fats = fats;
-    //put the updated macros back in its indexed spot
-    macroData[macroIndex] = updatedMacros;
-    res.status(200).json({macros:updatedMacros});
+    let macrosToUpdate;
+    try {
+        macrosToUpdate = await Macro.findById(macroID)
+    } catch (err){
+        const error = new HttpError('Something went wrong in the update macros logic', 500);
+        return next(error);
+    }
+    macrosToUpdate.protein = protein;
+    macrosToUpdate.carbs = carbs;
+    macrosToUpdate.fats = fats;
+    try {
+        await macrosToUpdate.save();
+    } catch (err){
+        const error = new HttpError('Updating macros failed', 422);
+        return next(error);
+    }
+    res.status(200).json({macros:macrosToUpdate.toObject({getters: true}) });
 };
 
-const deleteMacrosbyID = (req, res, next)=>{
+const deleteMacrosbyID = async (req, res, next)=>{
     const macroID = req.params.mid;
-    if(!macroData.find(m => m.id === macroID)){
-        throw new HttpError('Macros with that id do not exist', 404)
+    let macrosToDelete;
+    try {
+        macrosToDelete = await Macro.findById(macroID);
+    } catch (err){
+        const error = new HttpError('Something went wrong with the delete macro logic', 500);
+        return next(error);
     }
-    // use filter to find all places and return the ones that DO NOT MATCH THE ID !==
-    macroData = macroData.filter(m=> m.id !== macroID);
+    try {
+        macrosToDelete.remove();
+    } catch(err){
+        const error = new HttpError('Could not delete macro data', 500);
+        return next(error);
+    }
     res.status(200).json({message:'Successfully deleted macros'})
 }
 
 exports.getMacrosById = getMacrosById;
-exports.getMacrosByUserId = getMacrosByUserId;
+exports.getMacrosByUserName = getMacrosByUserName;
 exports.addMacros = addMacros;
 exports.updateMacrosByID = updateMacrosByID;
 exports.deleteMacrosbyID = deleteMacrosbyID;
