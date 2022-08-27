@@ -1,23 +1,8 @@
 const HttpError = require('../models/http-error');
-const { uuid } = require('uuidv4');
 const { validationResult } = require('express-validator');
 const User = require('../models/users');
 const dateEntry = new Date();
 
-// const users = [
-//     {
-//         id:'1',
-//         athlete:'user1',
-//         email:'test@test.com',
-//         password:'pass1'
-//     },
-//     {
-//         id:'2',
-//         athlete:'user2',
-//         email:'test2@test.com',
-//         password:'pass2'
-//     }
-// ]
 
 const getUsers = async (req, res, next)=>{
     let users;
@@ -48,7 +33,7 @@ const signup = async (req, res, next)=>{
         return next(error);
     }
     if (emailExists){
-        const error = new HttpError('Email already exists', 422);
+        const error = new HttpError('Email already in use', 422);
         return next (error);
     }
     try {
@@ -65,7 +50,9 @@ const signup = async (req, res, next)=>{
     const createdUser = new User ({
         username,
         email,
-        password
+        password,
+        macros:[],
+        workouts:[]
     });
     try {
         await createdUser.save()

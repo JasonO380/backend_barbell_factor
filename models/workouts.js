@@ -12,7 +12,7 @@ const workoutSchema = new Schema ({
     month: {type: String, require: true},
     day: {type: Number, require: true},
     year: {type: Number, require: true},
-    athlete: {type: String, require: true}
+    athlete: {type: mongoose.Types.ObjectId, require: true, ref: 'User'}
 });
 
 module.exports = mongoose.model('Workout', workoutSchema);
