@@ -21,7 +21,8 @@ const signup = async (req, res, next)=>{
     //check to see if errors is not empty if there are errors throw new HttpError
     if(!errors.isEmpty()){
         console.log(errors);
-        throw new HttpError('Password must be at least 6 characters, email must contain @, username must not be empty', 422)
+        const error = new HttpError('Password must be at least 6 characters, email must contain @, username must not be empty', 422)
+        return next(error);
     };
     //make sure mutliple email addresses can not be used
     let emailExists;
@@ -67,12 +68,17 @@ const login = async (req, res, next)=>{
     const { email, password } = req.body;
     let verifiedUser;
     try {
-        verifiedUser = await User.findOne({ email:email })
+        verifiedUser = await User.findOne({ email:email });
+        console.log(verifiedUser);
     } catch(err){
         const error = new HttpError('email not found', 500);
         return next (error);
     }
 
+    if(!verifiedUser){
+        const error = new HttpError('Email not found', 401);
+        return next(error);
+    }
     if(!verifiedUser || verifiedUser.password !== password){
         const error = new HttpError('Email and password do not match', 401);
         return next(error);
