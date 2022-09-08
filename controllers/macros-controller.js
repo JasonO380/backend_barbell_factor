@@ -102,7 +102,8 @@ const updateMacrosByID = async (req, res, next)=>{
     //check to see is errors is not empty if there are errors throw new HttpError
     if(!errors.isEmpty()){
         console.log(errors);
-        throw new HttpError('Please enter a valid macro count. Fields must not be empty', 422)
+        const error = new HttpError('Please enter a valid macro count. Fields must not be empty', 422);
+        return next(error);
     };
     const macroID = req.params.mid;
     let macrosToUpdate;

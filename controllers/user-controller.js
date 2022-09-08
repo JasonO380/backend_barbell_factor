@@ -1,4 +1,5 @@
 const HttpError = require('../models/http-error');
+const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/users');
 const dateEntry = new Date();
@@ -61,7 +62,17 @@ const signup = async (req, res, next)=>{
         const error = new HttpError('Something went wrong creating the user', 500);
         return next(error);
     }
-    res.status(201).json({ newUser: createdUser.toObject({ getters: true }) });
+    let token;
+    try {
+        token = jwt.sign(
+            {userID:createdUser.id}, 
+            'secret_hand_shake', 
+            {expiresIn:'2h'} );
+    } catch (err){
+        const error = new HttpError('Something went wrong with JWT registration', 401);
+        return next(error);
+    }
+    res.status(201).json({ userID: createdUser.id, token: token });
 };
 
 const login = async (req, res, next)=>{
@@ -83,7 +94,18 @@ const login = async (req, res, next)=>{
         const error = new HttpError('Email and password do not match', 401);
         return next(error);
     }
-    res.json({message:'Succesfully logged in!!', user: verifiedUser.toObject({ getters: true }) });
+    let token;
+    try {
+        token = jwt.sign(
+            {userID:verifiedUser.id}, 
+            'secret_hand_shake', 
+            {expiresIn:'1h'} );
+    } catch (err){
+        const error = new HttpError('Something went wrong with JWT login', 401);
+        return next(error);
+    }
+    
+    res.json({message: "Success", userID: verifiedUser.id, token:token });
 };
 
 exports.getUsers = getUsers;

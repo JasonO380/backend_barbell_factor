@@ -1,12 +1,14 @@
 const express = require('express');
 const workoutControllers = require('../controllers/workouts-controller');
 const { check } = require('express-validator');
-
+const checkAuth = require('../middleware/check-auth');
 const router = express.Router();
 
 router.get('/:wid', workoutControllers.getWorkoutsById);
 
 router.get('/workoutlog/:username', workoutControllers.getWorkoutsByUserName);
+
+router.use(checkAuth);
 
 router.post('/',
 [
