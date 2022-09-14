@@ -50,10 +50,10 @@ const addWorkouts = async (req, res, next) =>{
         reps,
         weight,
         athlete,
-        dayOfWeek: dateEntry.toLocaleString("default", { weekday: "long" }),
-        month: dateEntry.toLocaleString("en-US", { month:"long" }),
-        day:dateEntry.getDate(),
-        year: dateEntry.getFullYear()
+        dayOfWeek,
+        month,
+        day,
+        year
     })
 
     let user;
