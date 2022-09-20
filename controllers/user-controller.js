@@ -4,6 +4,7 @@ const { validationResult } = require('express-validator');
 const User = require('../models/users');
 const dateEntry = new Date();
 
+let tokenSecret = process.env.TOKEN;
 
 const getUsers = async (req, res, next)=>{
     let users;
@@ -66,7 +67,7 @@ const signup = async (req, res, next)=>{
     try {
         token = jwt.sign(
             {userID:createdUser.id}, 
-            'secret_hand_shake', 
+            tokenSecret, 
             {expiresIn:'2h'} );
     } catch (err){
         const error = new HttpError('Something went wrong with JWT registration', 401);
@@ -98,7 +99,7 @@ const login = async (req, res, next)=>{
     try {
         token = jwt.sign(
             {userID:verifiedUser.id}, 
-            'secret_hand_shake', 
+            tokenSecret, 
             {expiresIn:'1h'} );
     } catch (err){
         const error = new HttpError('Something went wrong with JWT login', 401);

@@ -50,6 +50,29 @@ const addMacros = async (req, res, next) => {
     };
     const { carbs, protein, fats, athlete, dayOfWeek, month, day, year } = req.body;
 
+    let foundUserMacroMonth;
+    let foundUserMacroYear;
+    let foundUserMacroDay;
+    let userMacros;
+    const currentDay = dateEntry.getDate();
+    const currentMonth = dateEntry.toLocaleString("en-US", { month:"long" });
+    const currentYear = dateEntry.getFullYear();
+    try {
+        userMacros = await User.findById(athlete).populate('macros');
+        foundUserMacroYear = userMacros.macros.filter(u => u.year === year);
+        foundUserMacroMonth = userMacros.macros.filter(u => u.month === month);
+        foundUserMacroDay = userMacros.macros.filter(u => u.day === day);
+        console.log(userMacros.macros);
+    } catch (err){
+        const error = new HttpError('Failed attempt to add macros', 500);
+        return next(error);
+    }
+    if(foundUserMacroYear && foundUserMacroMonth && foundUserMacroDay){
+        const error = new HttpError('Macros entered for day', 404);
+        console.log('here check if macros for day entered');
+        return next(error)
+    }
+
     const macroInfo = new Macro({
         carbs,
         protein,
@@ -63,7 +86,7 @@ const addMacros = async (req, res, next) => {
 
     let user;
     try {
-        user = await User.findById(athlete)
+        user = await User.findById(athlete);
     } catch (err){
         const error = new HttpError('Adding macros failed', 500);
         return next(error);
