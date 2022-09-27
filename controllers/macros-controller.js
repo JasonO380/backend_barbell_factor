@@ -54,22 +54,31 @@ const addMacros = async (req, res, next) => {
     let foundUserMacroYear;
     let foundUserMacroDay;
     let userMacros;
-    const currentDay = dateEntry.getDate();
-    const currentMonth = dateEntry.toLocaleString("en-US", { month:"long" });
-    const currentYear = dateEntry.getFullYear();
+    
     try {
+        //Populate all users macro info
         userMacros = await User.findById(athlete).populate('macros');
-        foundUserMacroYear = userMacros.macros.filter(u => u.year === year);
-        foundUserMacroMonth = userMacros.macros.filter(u => u.month === month);
-        foundUserMacroDay = userMacros.macros.filter(u => u.day === day);
-        console.log(userMacros.macros);
+        //filter to see if the POST request year being sent already exists
+        foundUserMacroYear = userMacros.macros.map(u => u.year);
+        //filter to see if the POST request month sent already exist
+        foundUserMacroMonth = userMacros.macros.map(u => u.month);
+        //filter to see if the POST request day bieng sent already exists
+        foundUserMacroDay = userMacros.macros.map(u => u.day);
+        console.log(foundUserMacroDay);
+        console.log(foundUserMacroDay.includes(day));
+        console.log(foundUserMacroMonth.includes(month));
+        console.log(foundUserMacroYear.includes(year));
     } catch (err){
         const error = new HttpError('Failed attempt to add macros', 500);
         return next(error);
     }
-    if(foundUserMacroYear && foundUserMacroMonth && foundUserMacroDay){
-        const error = new HttpError('Macros entered for day', 404);
-        console.log('here check if macros for day entered');
+    //if all three exist throw an error
+    if(
+        foundUserMacroDay.includes(day) && 
+        foundUserMacroMonth.includes(month) && 
+        foundUserMacroYear.includes(year))
+        {
+        const error = new HttpError('Macros entered for day', 422);
         return next(error)
     }
 
@@ -77,10 +86,10 @@ const addMacros = async (req, res, next) => {
         carbs,
         protein,
         fats,
-        dayOfWeek: dateEntry.toLocaleString("default", { weekday: "long" }),
-        month: dateEntry.toLocaleString("en-US", { month:"long" }),
-        day:dateEntry.getDate(),
-        year: dateEntry.getFullYear(),
+        dayOfWeek,
+        month,
+        day,
+        year,
         athlete,
     });
 
@@ -114,7 +123,7 @@ const addMacros = async (req, res, next) => {
         const error = new HttpError('Something went wrong adding macros', 500);
         return next(error);
     }
-    
+    console.log(macroInfo)
     res.status(201).json({macros: macroInfo})
 }
 

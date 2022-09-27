@@ -9,7 +9,7 @@ router.get('/:mid', macrosControllers.getMacrosById);
 
 router.get('/macroslog/:username', macrosControllers.getMacrosByUserName);
 //with express-validators enter array of checks for fields to be validated
-// router.use(checkAuth);
+router.use(checkAuth);
 router.post('/', 
 [
     check('carbs').not().isEmpty(),
