@@ -65,8 +65,8 @@ const addMacros = async (req, res, next) => {
         //filter to see if the POST request day bieng sent already exists
         foundUserMacroDay = userMacros.macros.map(u => u.day);
         console.log(foundUserMacroDay);
-        console.log(foundUserMacroDay.includes(day));
-        console.log(foundUserMacroMonth.includes(month));
+        console.log(foundUserMacroDay.includes(day + month + year));
+        console.log(foundUserMacroMonth.includes(month + day + year));
         console.log(foundUserMacroYear.includes(year));
     } catch (err){
         const error = new HttpError('Failed attempt to add macros', 500);
@@ -74,9 +74,11 @@ const addMacros = async (req, res, next) => {
     }
     //if all three exist throw an error
     if(
-        foundUserMacroDay.includes(day) && 
-        foundUserMacroMonth.includes(month) && 
-        foundUserMacroYear.includes(year))
+        foundUserMacroDay.includes(day + month + year)
+        // foundUserMacroDay.includes(day) && 
+        // foundUserMacroMonth.includes(month) && 
+        // foundUserMacroYear.includes(year)
+        )
         {
         const error = new HttpError('Macros entered for day', 422);
         return next(error)
