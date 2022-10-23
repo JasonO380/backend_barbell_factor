@@ -2,6 +2,7 @@ const HttpError = require('../models/http-error');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/users');
+const bcrpt = require('bcrypt');
 const dateEntry = new Date();
 
 let tokenSecret = process.env.TOKEN;
@@ -50,10 +51,19 @@ const signup = async (req, res, next)=>{
         return next(error);
     }
 
+    let hashedPassword;
+    try {
+        hashedPassword = await bcrpt.hash(password, 12);
+    } catch(err){
+        const error = new HttpError('Bcrypt logic failed', 500);
+        return next(error);
+    }
+    
+
     const createdUser = new User ({
         username,
         email,
-        password,
+        password: hashedPassword,
         macros:[],
         workouts:[]
     });
@@ -91,10 +101,24 @@ const login = async (req, res, next)=>{
         const error = new HttpError('Email not found', 401);
         return next(error);
     }
-    if(!verifiedUser || verifiedUser.password !== password){
+    // if(!verifiedUser || verifiedUser.password !== password){
+    //     const error = new HttpError('Email and password do not match', 401);
+    //     return next(error);
+    // }
+    let isValidPassword = false;
+    try {
+        isValidPassword = await bcrpt.compare(password, verifiedUser.password)
+    } catch(err){
+        const error = new HttpError('Login logic with bcrypt error', 500);
+        return next(error);
+    }
+
+    if(!isValidPassword){
         const error = new HttpError('Email and password do not match', 401);
         return next(error);
     }
+    
+
     let token;
     try {
         token = jwt.sign(
