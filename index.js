@@ -2,7 +2,7 @@ const express = require('express');
 const bodyparser = require('body-parser');
 const HttpError = require('./models/http-error');
 const mongoose = require('mongoose');
-require('dotenv').config({path: `.env`});
+require('dotenv').config();
 
 const workoutRoutes = require('./routes/workout-routes');
 const macroRoutes = require('./routes/macros-routes');
@@ -42,7 +42,7 @@ app.use((error, req, res, next)=> {
 })
 
 mongoose
-    .connect(URL)
+    .connect(URL, {useNewUrlParser: true})
     .then(()=> {
         app.listen(process.env.PORT || 5000);
     })
