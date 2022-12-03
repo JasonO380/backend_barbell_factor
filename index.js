@@ -2,7 +2,7 @@ const express = require('express');
 const bodyparser = require('body-parser');
 const HttpError = require('./models/http-error');
 const mongoose = require('mongoose');
-require('dotenv').config();
+require('dotenv').config({path: `.env`});
 
 const workoutRoutes = require('./routes/workout-routes');
 const macroRoutes = require('./routes/macros-routes');
