@@ -42,7 +42,7 @@ app.use((error, req, res, next)=> {
 })
 
 mongoose
-    .connect(URL, {useNewUrlParser: true})
+    .connect(URL)
     .then(()=> {
         app.listen(process.env.PORT || 5000);
     })
