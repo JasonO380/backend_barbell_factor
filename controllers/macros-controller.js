@@ -62,7 +62,7 @@ const addMacros = async (req, res, next) => {
         foundUserMacroYear = userMacros.macros.map(u => u.year);
         //filter to see if the POST request month sent already exist
         foundUserMacroMonth = userMacros.macros.map(u => u.month);
-        //filter to see if the POST request day bieng sent already exists
+        //filter to see if the POST request day being sent already exists
         foundUserMacroDay = userMacros.macros.map(u => u.day);
         console.log(foundUserMacroDay);
         console.log(foundUserMacroDay.includes(day + month + year));
