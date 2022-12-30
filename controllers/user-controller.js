@@ -38,7 +38,6 @@ const signup = async (req, res, next)=>{
     }
     if (emailExists){
         const error = new HttpError('Email already in use', 422);
-        res.status(422).json({message: error })
         return next (error);
     }
     try {
@@ -49,7 +48,6 @@ const signup = async (req, res, next)=>{
     }
     if (userNameExists){
         const error = new HttpError('Username has been taken', 422);
-        res.status(422).json({message: error })
         return next(error);
     }
 
@@ -101,13 +99,9 @@ const login = async (req, res, next)=>{
 
     if(!verifiedUser){
         const error = new HttpError('Email not found', 401);
-        res.status(422).json({message: error })
         return next(error);
     }
-    // if(!verifiedUser || verifiedUser.password !== password){
-    //     const error = new HttpError('Email and password do not match', 401);
-    //     return next(error);
-    // }
+    
     let isValidPassword = false;
     try {
         isValidPassword = await bcrpt.compare(password, verifiedUser.password)
@@ -118,8 +112,7 @@ const login = async (req, res, next)=>{
 
     if(!isValidPassword){
         const error = new HttpError('Email and password do not match', 401);
-        res.status(422).json({message: error })
-        return next(error);
+        return next(error)
     }
     
 
